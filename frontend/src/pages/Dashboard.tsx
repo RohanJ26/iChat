@@ -75,96 +75,171 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   }
 
+  // Update the useEffect hook to properly load calendar events from localStorage
   useEffect(() => {
-    // Simulate loading dashboard data with AI-enhanced content
+    // Load stats and basic data
     setStats({
       totalChats: 12,
       totalMessages: 1247,
-      importantMessages: 23,
-      upcomingEvents: 5,
+      importantMessages: 0, // Will be updated based on localStorage
+      upcomingEvents: 0, // Will be updated based on localStorage
     })
 
-    // Mock recent activity with AI-detected properties
-    setRecentActivity([
-      {
-        id: "1",
-        chatId: "chat1",
-        senderId: "user1",
-        senderName: "Alice Johnson",
-        content:
-          "URGENT: Community meeting scheduled for tomorrow at 7 PM in the main hall. All residents must attend.",
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        isImportant: true,
-        hasEvent: true,
-        eventDetails: {
-          title: "Community Meeting",
-          date: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          time: "7:00 PM",
-          description: "Monthly community meeting to discuss upcoming projects",
-          type: "meeting",
-        },
-      },
-      {
-        id: "2",
-        chatId: "chat2",
-        senderId: "user2",
-        senderName: "Bob Smith",
-        content: "Maintenance work will be done on the elevator this weekend from 9 AM to 5 PM",
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-        isImportant: true,
-        hasEvent: true,
-        eventDetails: {
-          title: "Elevator Maintenance",
-          date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-          time: "9:00 AM - 5:00 PM",
-          description: "Scheduled maintenance work on building elevator",
-          type: "maintenance",
-        },
-      },
-      {
-        id: "3",
-        chatId: "chat3",
-        senderId: "user3",
-        senderName: "Carol Davis",
-        content: "Weekend barbecue event planning discussion for next Saturday at 4 PM",
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-        hasEvent: true,
-        isImportant: false,
-        eventDetails: {
-          title: "Weekend Barbecue",
-          date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-          time: "4:00 PM",
-          description: "Community barbecue event in the garden area",
-          type: "event",
-        },
-      },
-      {
-        id: "4",
-        chatId: "chat4",
-        senderId: "user4",
-        senderName: "David Wilson",
-        content:
-          "Breaking: The government is secretly controlling our minds through 5G towers. Share this before they delete it!",
-        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
-        isImportant: false,
-        isFakeNews: true,
-      },
-      {
-        id: "5",
-        chatId: "chat5",
-        senderId: "user5",
-        senderName: "Emma Brown",
-        content: "New parking regulations effective next month - all residents need to register their vehicles",
-        timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000),
-        isImportant: true,
-      },
-    ])
+    // Load important messages from localStorage
+    let storedImportantMessages: Message[] = []
+    try {
+      const storedImportant = localStorage.getItem("ichat_important_messages")
+      if (storedImportant) {
+        const parsedImportant = JSON.parse(storedImportant)
+        storedImportantMessages = parsedImportant.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }))
+      }
+    } catch (error) {
+      console.error("Error loading important messages:", error)
+    }
 
-    // Extract upcoming events from messages with events
-    const eventsFromMessages = recentActivity
-      .filter((msg) => msg.hasEvent && msg.eventDetails)
-      .map((msg) => msg.eventDetails!)
-      .filter((event) => event.date > new Date()) // Only future events
+    // Load calendar events from localStorage
+    let storedCalendarEvents: Message[] = []
+    try {
+      const storedEvents = localStorage.getItem("ichat_calendar_events")
+      if (storedEvents) {
+        const parsedEvents = JSON.parse(storedEvents)
+        storedCalendarEvents = parsedEvents.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+          eventDetails: msg.eventDetails
+            ? {
+                ...msg.eventDetails,
+                date: new Date(msg.eventDetails.date),
+              }
+            : undefined,
+        }))
+      }
+    } catch (error) {
+      console.error("Error loading calendar events:", error)
+    }
+
+    // If we have stored data, use it
+    if (storedImportantMessages.length > 0 || storedCalendarEvents.length > 0) {
+      // Combine stored data with some default data to ensure we have content
+      const combinedActivity = [
+        ...storedImportantMessages,
+        ...storedCalendarEvents.filter((event) => !storedImportantMessages.some((imp) => imp.id === event.id)),
+      ]
+
+      // If we don't have enough stored data, add some default items
+      if (combinedActivity.length < 2) {
+        // Add a few default items to ensure the UI has content
+        combinedActivity.push({
+          id: "default1",
+          chatId: "chat1",
+          senderId: "user1",
+          senderName: "System",
+          content: "Mark messages as important or add them to your calendar to see them here.",
+          timestamp: new Date(),
+          isImportant: true,
+        })
+      }
+
+      setRecentActivity(combinedActivity)
+
+      // Update stats based on stored data
+      setStats((prev) => ({
+        ...prev,
+        importantMessages: storedImportantMessages.length,
+        upcomingEvents: storedCalendarEvents.length,
+      }))
+    } else {
+      // Fallback to default data if nothing is stored yet
+      setRecentActivity([
+        {
+          id: "1",
+          chatId: "chat1",
+          senderId: "user1",
+          senderName: "Alice Johnson",
+          content:
+            "URGENT: Community meeting scheduled for tomorrow at 7 PM in the main hall. All residents must attend.",
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          isImportant: true,
+          hasEvent: true,
+          eventDetails: {
+            title: "Community Meeting",
+            date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            time: "7:00 PM",
+            description: "Monthly community meeting to discuss upcoming projects",
+            type: "meeting",
+          },
+        },
+        {
+          id: "2",
+          chatId: "chat2",
+          senderId: "user2",
+          senderName: "Bob Smith",
+          content: "Maintenance work will be done on the elevator this weekend from 9 AM to 5 PM",
+          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+          isImportant: true,
+          hasEvent: true,
+          eventDetails: {
+            title: "Elevator Maintenance",
+            date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+            time: "9:00 AM - 5:00 PM",
+            description: "Scheduled maintenance work on building elevator",
+            type: "maintenance",
+          },
+        },
+        {
+          id: "3",
+          chatId: "chat3",
+          senderId: "user3",
+          senderName: "Carol Davis",
+          content: "Weekend barbecue event planning discussion for next Saturday at 4 PM",
+          timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
+          hasEvent: true,
+          isImportant: false,
+          eventDetails: {
+            title: "Weekend Barbecue",
+            date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+            time: "4:00 PM",
+            description: "Community barbecue event in the garden area",
+            type: "event",
+          },
+        },
+        {
+          id: "4",
+          chatId: "chat4",
+          senderId: "user4",
+          senderName: "David Wilson",
+          content:
+            "Breaking: The government is secretly controlling our minds through 5G towers. Share this before they delete it!",
+          timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
+          isImportant: false,
+          isFakeNews: true,
+        },
+        {
+          id: "5",
+          chatId: "chat5",
+          senderId: "user5",
+          senderName: "Emma Brown",
+          content: "New parking regulations effective next month - all residents need to register their vehicles",
+          timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000),
+          isImportant: true,
+        },
+      ])
+    }
+
+    // Extract upcoming events from messages with events - fix the logic
+    const eventsFromMessages =
+      storedCalendarEvents.length > 0
+        ? storedCalendarEvents
+            .filter((msg) => msg.hasEvent && msg.eventDetails)
+            .map((msg) => msg.eventDetails!)
+            .filter((event) => event.date >= new Date(new Date().setHours(0, 0, 0, 0))) // Include today and future events
+        : recentActivity
+            .filter((msg) => msg.hasEvent && msg.eventDetails)
+            .map((msg) => msg.eventDetails!)
+            .filter((event) => event.date >= new Date(new Date().setHours(0, 0, 0, 0))) // Include today and future events
 
     setUpcomingEvents(eventsFromMessages)
   }, [])
@@ -189,7 +264,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     })
   }
 
-  // Update the renderCalendar function to check for removed events
+  // Update the renderCalendar function to properly highlight dates with events
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentDate)
     const firstDay = getFirstDayOfMonth(currentDate)
@@ -220,16 +295,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <div
           key={day}
           onClick={() => handleDateClick(day)}
-          className={`h-8 flex items-center justify-center text-sm cursor-pointer rounded-lg transition-all ${
+          className={`h-8 flex items-center justify-center text-sm cursor-pointer rounded-lg transition-all relative group ${
             isToday
-              ? "bg-indigo-600 text-white"
+              ? "bg-indigo-600 text-white font-semibold"
               : eventForDate
-                ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                ? "bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
                 : "text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-          } ${eventForDate ? "font-semibold" : ""}`}
+          }`}
         >
           {day}
-          {eventForDate && <div className="absolute w-1 h-1 bg-purple-600 dark:bg-purple-400 rounded-full mt-6"></div>}
+          {eventForDate && (
+            <div className="absolute z-20 bg-gray-900 dark:bg-gray-700 text-white p-3 rounded-lg shadow-xl text-xs w-64 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 -translate-y-full -translate-x-1/2 left-1/2 top-0 pointer-events-none">
+              <div className="font-semibold text-sm mb-1">{eventForDate.event.title}</div>
+              <div className="text-gray-300 mb-1">{eventForDate.event.time}</div>
+              <div className="text-gray-400 text-xs">{eventForDate.event.description}</div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+                <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </div>
+          )}
         </div>,
       )
     }
@@ -237,11 +321,36 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     return days
   }
 
-  // Add a function to remove events from calendar
+  // Update the removeFromCalendar function to also remove from localStorage
   const removeFromCalendar = (event: EventDetails) => {
     if (event && event.title) {
       setRemovedEvents([...removedEvents, event.title])
       setShowEventModal(false)
+
+      // Also remove from localStorage
+      try {
+        const storedEvents = localStorage.getItem("ichat_calendar_events") || "[]"
+        const parsedEvents = JSON.parse(storedEvents)
+
+        // Find events with this title and remove them
+        const filteredEvents = parsedEvents.filter(
+          (item: any) => !(item.eventDetails && item.eventDetails.title === event.title),
+        )
+
+        localStorage.setItem("ichat_calendar_events", JSON.stringify(filteredEvents))
+
+        // Update upcomingEvents state
+        setUpcomingEvents(upcomingEvents.filter((e) => e.title !== event.title))
+
+        // Update stats
+        setStats((prev) => ({
+          ...prev,
+          upcomingEvents: prev.upcomingEvents - 1,
+        }))
+      } catch (error) {
+        console.error("Error removing event from localStorage:", error)
+      }
+
       addToast({
         type: "success",
         title: "Event Removed",
@@ -261,29 +370,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <MessageSquare className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Chats</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalChats}</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Messages Today</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalMessages}</p>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center">

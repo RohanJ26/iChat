@@ -58,27 +58,6 @@ const Hero: React.FC = () => {
             </div>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="group bg-indigo-600 text-white px-8 py-4 rounded-lg hover:bg-indigo-700 transition-all duration-300 flex items-center space-x-2 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-              <span>Get Started Free</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button className="border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-8 py-4 rounded-lg hover:border-indigo-600 hover:text-indigo-600 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-all duration-300 text-lg font-semibold">
-              Watch Demo
-            </button>
-          </div>
-
-          {/* Trust indicators */}
-          <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Trusted by communities worldwide</p>
-            <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">Green Meadows</div>
-              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">Tech Hub</div>
-              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">Student Union</div>
-              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">Neighborhood Watch</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

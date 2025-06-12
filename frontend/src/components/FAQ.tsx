@@ -114,13 +114,6 @@ const FAQ: React.FC = () => {
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center mt-16">
-          <p className="text-gray-600 dark:text-gray-400 mb-6">Still have questions?</p>
-          <button className="bg-indigo-600 dark:bg-indigo-700 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 transition-colors font-semibold">
-            Contact Our Team
-          </button>
-        </div>
       </div>
     </section>
   )

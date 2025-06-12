@@ -156,6 +156,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages: propMessages, u
     }
   }, [messages])
 
+  // Add a useEffect to load stored data on component mount
+  useEffect(() => {
+    // Load stored important messages and events from localStorage
+    try {
+      const storedImportantMessages = localStorage.getItem("ichat_important_messages")
+      const storedCalendarEvents = localStorage.getItem("ichat_calendar_events")
+
+      if (storedImportantMessages) {
+        const parsedImportant = JSON.parse(storedImportantMessages)
+        // Apply stored important flags to messages
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => {
+            const storedMsg = parsedImportant.find((m: { id: string }) => m.id === msg.id)
+            if (storedMsg) {
+              return { ...msg, isImportant: true }
+            }
+            return msg
+          }),
+        )
+      }
+
+      if (storedCalendarEvents) {
+        const parsedEvents = JSON.parse(storedCalendarEvents)
+        // Apply stored event flags to messages
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => {
+            const storedEvent = parsedEvents.find((m: { id: string }) => m.id === msg.id)
+            if (storedEvent) {
+              return {
+                ...msg,
+                hasEvent: true,
+                eventDetails: storedEvent.eventDetails,
+              }
+            }
+            return msg
+          }),
+        )
+      }
+    } catch (error) {
+      console.error("Error loading stored messages:", error)
+    }
+  }, [chat.id])
+
   const handleSendMessage = () => {
     if (!newMessage.trim() || !user) return
 
@@ -221,11 +264,42 @@ Provide exactly 3 responses, one per line:`
     setShowAiSuggestions(false)
   }
 
+  // Modify the toggleImportant function to store data in localStorage
   const toggleImportant = (message: Message) => {
     setMessages(
       messages.map((m) => {
         if (m.id === message.id) {
           const isImportant = !m.isImportant
+
+          // Update localStorage
+          try {
+            const storedImportant = localStorage.getItem("ichat_important_messages") || "[]"
+            const parsedImportant = JSON.parse(storedImportant)
+
+            if (isImportant) {
+              // Add to important messages
+              parsedImportant.push({
+                id: m.id,
+                chatId: m.chatId,
+                senderId: m.senderId,
+                senderName: m.senderName,
+                content: m.content,
+                timestamp: m.timestamp,
+                isImportant: true,
+              })
+            } else {
+              // Remove from important messages
+              const index = parsedImportant.findIndex((item: { id: string }) => item.id === m.id)
+              if (index !== -1) {
+                parsedImportant.splice(index, 1)
+              }
+            }
+
+            localStorage.setItem("ichat_important_messages", JSON.stringify(parsedImportant))
+          } catch (error) {
+            console.error("Error updating important messages in localStorage:", error)
+          }
+
           addToast({
             type: isImportant ? "success" : "info",
             title: isImportant ? "Message marked as important" : "Message unmarked as important",
@@ -238,11 +312,52 @@ Provide exactly 3 responses, one per line:`
     )
   }
 
+  // Modify the toggleCalendar function to store data in localStorage
   const toggleCalendar = (message: Message) => {
     setMessages(
       messages.map((m) => {
         if (m.id === message.id) {
           const hasEvent = !m.hasEvent
+
+          // Update localStorage
+          try {
+            const storedEvents = localStorage.getItem("ichat_calendar_events") || "[]"
+            const parsedEvents = JSON.parse(storedEvents)
+
+            if (hasEvent) {
+              // Create event details if they don't exist
+              const eventDetails = m.eventDetails || {
+                title: `Event from ${m.senderName}`,
+                date: new Date(),
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                description: m.content,
+                type: "event",
+              }
+
+              // Add to calendar events
+              parsedEvents.push({
+                id: m.id,
+                chatId: m.chatId,
+                senderId: m.senderId,
+                senderName: m.senderName,
+                content: m.content,
+                timestamp: m.timestamp,
+                hasEvent: true,
+                eventDetails: eventDetails,
+              })
+            } else {
+              // Remove from calendar events
+              const index = parsedEvents.findIndex((item: { id: string }) => item.id === m.id)
+              if (index !== -1) {
+                parsedEvents.splice(index, 1)
+              }
+            }
+
+            localStorage.setItem("ichat_calendar_events", JSON.stringify(parsedEvents))
+          } catch (error) {
+            console.error("Error updating calendar events in localStorage:", error)
+          }
+
           addToast({
             type: hasEvent ? "success" : "info",
             title: hasEvent ? "Event added to calendar" : "Event removed from calendar",
